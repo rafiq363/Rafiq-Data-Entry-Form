@@ -1,0 +1,432 @@
+﻿<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Google Sheets Entry & Instant Search</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: #f4f7f6;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .container {
+            background: #ffffff;
+            width: 100%;
+            max-width: 550px;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        h2 {
+            color: #333;
+            margin-bottom: 20px;
+            text-align: center;
+            font-size: 22px;
+        }
+
+        .status-msg {
+            text-align: center;
+            font-size: 13px;
+            color: #007bff;
+            font-weight: 600;
+            margin-bottom: 15px;
+            min-height: 18px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #555;
+            font-size: 14px;
+        }
+
+        input[type="text"],
+        input[type="tel"],
+        input[type="date"],
+        select,
+        textarea {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            font-size: 15px;
+            outline: none;
+            transition: border-color 0.2s;
+            background-color: #fff;
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 70px;
+        }
+
+            input[type="text"]:focus,
+            input[type="tel"]:focus,
+            input[type="date"]:focus,
+            select:focus,
+            textarea:focus {
+                border-color: #28a745;
+            }
+
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        button {
+            width: 100%;
+            padding: 12px;
+            border: none;
+            border-radius: 6px;
+            font-size: 15px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .btn-save {
+            background-color: #28a745;
+            color: white;
+        }
+
+            .btn-save:hover {
+                background-color: #218838;
+            }
+
+        .btn-cancel {
+            background-color: #6c757d;
+            color: white;
+            display: none;
+        }
+
+            .btn-cancel:hover {
+                background-color: #5a6268;
+            }
+
+        hr {
+            margin: 25px 0;
+            border: 0;
+            border-top: 1px solid #eee;
+        }
+
+        .search-section {
+            background-color: #fafafa;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #e9e9e9;
+        }
+
+        .result-box {
+            margin-top: 15px;
+            padding: 15px;
+            border-radius: 6px;
+            display: none;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        .result-success {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+
+        .result-error {
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+
+        .action-btns {
+            margin-top: 12px;
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn-edit {
+            background-color: #ffc107;
+            color: #212529;
+            padding: 8px;
+            font-size: 13px;
+        }
+
+        .btn-delete {
+            background-color: #dc3545;
+            color: white;
+            padding: 8px;
+            font-size: 13px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h2 id="formTitle">Online Data Entry</h2>
+        <div class="status-msg" id="statusMsg">Connecting to Google Sheets...</div>
+
+        <!-- Entry / Edit Form -->
+        <div class="form-group">
+            <label for="userName">Full Name (पूरा नाम):</label>
+            <input type="text" id="userName" placeholder="Enter full name">
+        </div>
+
+        <div class="form-group">
+            <label for="userDob">Date of Birth (जन्म तिथि):</label>
+            <input type="date" id="userDob">
+        </div>
+
+        <div class="form-group">
+            <label for="userMobile">Mobile Number (मोबाइल नंबर):</label>
+            <input type="tel" id="userMobile" placeholder="Enter mobile number">
+        </div>
+
+        <div class="form-group">
+            <label for="userGender">Gender (लिंग):</label>
+            <select id="userGender">
+                <option value="">-- Select Gender --</option>
+                <option value="Male">Male (पुरुष)</option>
+                <option value="Female">Female (महिला)</option>
+                <option value="Other">Other (अन्य)</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="userAddress">Address (पता):</label>
+            <textarea id="userAddress" placeholder="Enter full address"></textarea>
+        </div>
+
+        <div class="btn-group">
+            <button class="btn-save" id="saveBtn" onclick="saveData()">Save Online</button>
+            <button class="btn-cancel" id="cancelBtn" onclick="resetForm()">Cancel Edit</button>
+        </div>
+
+        <hr>
+
+        <!-- Search Section -->
+        <div class="search-section">
+            <h2>Search Record</h2>
+            <div class="form-group">
+                <label for="searchMobile">Enter Mobile Number to Search:</label>
+                <input type="tel" id="searchMobile" placeholder="Type mobile number..." oninput="searchData()">
+            </div>
+
+            <div id="resultBox" class="result-box"></div>
+        </div>
+    </div>
+
+    <script>
+        // ⚠️ यहाँ अपनी Google Web App लिंक डालें:
+        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz4kFe-vILPHjiPbScfdUwIeqhaH-Z1nkhw6pT4bqZx7Okbo9TcekG9yxb50_AhTv-N/exec";
+
+        let globalData = [];
+        let isEditMode = false;
+        let currentEditMobile = "";
+
+        // 1. JSONP के ज़रिए डेटा लोड करने वाला फ़ंक्शन
+        function fetchOnlineData() {
+            let statusMsg = document.getElementById('statusMsg');
+            if (statusMsg) statusMsg.innerText = "Syncing data from Google Sheets...";
+
+            let oldScript = document.getElementById('jsonpScript');
+            if (oldScript) oldScript.remove();
+
+            let script = document.createElement('script');
+            script.id = 'jsonpScript';
+            script.src = SCRIPT_URL + "?callback=handleDataResponse&t=" + new Date().getTime();
+
+            script.onerror = function () {
+                if (statusMsg) statusMsg.innerText = "Sync failed! Check Web App URL or Permissions.";
+            };
+
+            document.body.appendChild(script);
+        }
+
+        // 2. Google Script से डेटा मिलने के बाद यह कॉल होगा
+        function handleDataResponse(data) {
+            globalData = data || [];
+            let statusMsg = document.getElementById('statusMsg');
+            if (statusMsg) {
+                statusMsg.innerText = "Data Synced (" + globalData.length + " records loaded)";
+                setTimeout(() => { statusMsg.innerText = ""; }, 3000);
+            }
+            searchData();
+        }
+
+        window.onload = function () {
+            if (SCRIPT_URL && SCRIPT_URL !== "YOUR_GOOGLE_SCRIPT_URL_HERE") {
+                fetchOnlineData();
+            } else {
+                alert("कृपया SCRIPT_URL में अपनी Google Web App लिंक डालें!");
+            }
+        };
+
+        // 3. डेटा सेव / अपडेट करने का फ़ंक्शन
+        function saveData() {
+            let name = document.getElementById('userName').value.trim();
+            let dob = document.getElementById('userDob').value;
+            let mobile = document.getElementById('userMobile').value.trim();
+            let gender = document.getElementById('userGender').value;
+            let address = document.getElementById('userAddress').value.trim();
+
+            let saveBtn = document.getElementById('saveBtn');
+            let statusMsg = document.getElementById('statusMsg');
+
+            if (name === "" || mobile === "") {
+                alert("कृपया कम से कम नाम और मोबाइल नंबर भरें!");
+                return;
+            }
+
+            saveBtn.disabled = true;
+            if (statusMsg) statusMsg.innerText = "Saving data...";
+
+            let payload = isEditMode ?
+                { action: "update", oldMobile: currentEditMobile, name: name, dob: dob, mobile: mobile, gender: gender, address: address } :
+                { action: "create", name: name, dob: dob, mobile: mobile, gender: gender, address: address };
+
+            fetch(SCRIPT_URL, {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            })
+                .then(() => {
+                    alert(isEditMode ? "Record Updated!" : "Record Saved!");
+                    resetForm();
+                    saveBtn.disabled = false;
+                    if (statusMsg) statusMsg.innerText = "";
+                    setTimeout(fetchOnlineData, 1500);
+                })
+                .catch(err => {
+                    alert("Error processing request!");
+                    saveBtn.disabled = false;
+                    if (statusMsg) statusMsg.innerText = "";
+                });
+        }
+
+        // 4. सर्च फ़ंक्शन (Instant Search)
+        function searchData() {
+            let searchInput = document.getElementById('searchMobile').value.trim();
+            let resultBox = document.getElementById('resultBox');
+
+            if (!resultBox) return;
+
+            if (searchInput === "") {
+                resultBox.style.display = "none";
+                return;
+            }
+
+            let cleanSearch = String(searchInput).replace(/\D/g, '');
+
+            let found = globalData.find(item => {
+                if (!item || !item.mobile) return false;
+                let itemMobileClean = String(item.mobile).replace(/\D/g, '');
+                return itemMobileClean === cleanSearch || String(item.mobile).trim() === searchInput;
+            });
+
+            if (found) {
+                resultBox.className = "result-box result-success";
+
+                // सुरक्षित HTML स्ट्रिंग बनाना (Single Quotes Escaping के लिए)
+                let safeName = (found.name || '').replace(/'/g, "\\'");
+                let safeDob = (found.dob || '').replace(/'/g, "\\'");
+                let safeMobile = (found.mobile || '').replace(/'/g, "\\'");
+                let safeGender = (found.gender || '').replace(/'/g, "\\'");
+                let safeAddress = (found.address || '').replace(/'/g, "\\'").replace(/\n/g, " ");
+
+                resultBox.innerHTML = `
+                        <div><strong>Name:</strong> ${found.name || 'N/A'}</div>
+                        <div><strong>DOB:</strong> ${found.dob || 'N/A'}</div>
+                        <div><strong>Mobile:</strong> ${found.mobile || 'N/A'}</div>
+                        <div><strong>Gender:</strong> ${found.gender || 'N/A'}</div>
+                        <div><strong>Address:</strong> ${found.address || 'N/A'}</div>
+                        <div class="action-btns">
+                            <button class="btn-edit" onclick="prepareEdit('${safeName}', '${safeDob}', '${safeMobile}', '${safeGender}', '${safeAddress}')">Edit</button>
+                            <button class="btn-delete" onclick="deleteData('${safeMobile}')">Delete</button>
+                        </div>
+                    `;
+                resultBox.style.display = "block";
+            } else {
+                resultBox.className = "result-box result-error";
+                resultBox.innerHTML = "<strong>No record found for: " + searchInput + "</strong>";
+                resultBox.style.display = "block";
+            }
+        }
+
+        // 5. एडिट के लिए फॉर्म में डेटा भरना
+        function prepareEdit(name, dob, mobile, gender, address) {
+            document.getElementById('userName').value = name;
+            document.getElementById('userDob').value = dob;
+            document.getElementById('userMobile').value = mobile;
+            document.getElementById('userGender').value = gender;
+            document.getElementById('userAddress').value = address;
+
+            document.getElementById('formTitle').innerText = "Edit Record";
+            document.getElementById('saveBtn').innerText = "Update Record";
+            document.getElementById('cancelBtn').style.display = "block";
+
+            isEditMode = true;
+            currentEditMobile = mobile;
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // 6. फॉर्म रीसेट करना
+        function resetForm() {
+            document.getElementById('userName').value = "";
+            document.getElementById('userDob').value = "";
+            document.getElementById('userMobile').value = "";
+            document.getElementById('userGender').value = "";
+            document.getElementById('userAddress').value = "";
+
+            document.getElementById('formTitle').innerText = "Online Data Entry";
+            document.getElementById('saveBtn').innerText = "Save Online";
+            document.getElementById('cancelBtn').style.display = "none";
+            document.getElementById('resultBox').style.display = "none";
+            document.getElementById('searchMobile').value = "";
+
+            isEditMode = false;
+            currentEditMobile = "";
+        }
+
+        // 7. डेटा डिलीट करना
+        function deleteData(mobile) {
+            if (!confirm("Are you sure you want to delete this record?")) return;
+
+            let statusMsg = document.getElementById('statusMsg');
+            if (statusMsg) statusMsg.innerText = "Deleting record...";
+
+            fetch(SCRIPT_URL, {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: "delete", mobile: mobile })
+            })
+                .then(() => {
+                    alert("Record Deleted!");
+                    resetForm();
+                    if (statusMsg) statusMsg.innerText = "";
+                    setTimeout(fetchOnlineData, 1500);
+                });
+        }
+    </script>
+
+</body>
+</html>
